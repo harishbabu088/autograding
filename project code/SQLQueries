@@ -1,0 +1,56 @@
+CREATE TABLE `Assignment` (
+  `uname` varchar(45) NOT NULL,
+  `assignmentID` int(11) NOT NULL,
+  `ques` text NOT NULL,
+  `description` mediumtext,
+  `dateOfUpload` date NOT NULL,
+  `testFile` blob NOT NULL,
+  `dateOfSub` date NOT NULL,
+  `exOutput` blob NOT NULL,
+  `nclass` int(11) DEFAULT NULL,
+  PRIMARY KEY (`uname`,`assignmentID`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `Assignment_Temp` (
+  `uname` varchar(45) NOT NULL,
+  `assignmentID` int(11) NOT NULL,
+  `ques` text NOT NULL,
+  `description` mediumtext,
+  `dateOfUpload` date NOT NULL,
+  `testFile` blob NOT NULL,
+  `dateOfSub` date NOT NULL,
+  `exOutput` blob NOT NULL,
+  `nclass` varchar(45) DEFAULT NULL,
+  PRIMARY KEY (`uname`,`assignmentID`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `Student` (
+  `uname` varchar(45) NOT NULL,
+  `assignmentId` int(11) NOT NULL,
+  `status` varchar(45) DEFAULT NULL,
+  `dateOfSub` varchar(45) DEFAULT NULL,
+  `rating` varchar(45) DEFAULT NULL,
+  `solutionFile` blob,
+  `feedback` mediumtext,
+  PRIMARY KEY (`uname`,`assignmentId`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `Student_Temp` (
+  `uname` varchar(45) NOT NULL,
+  `assignmentId` int(11) NOT NULL,
+  `status` varchar(45) DEFAULT NULL,
+  `dateOfSub` varchar(45) DEFAULT NULL,
+  `rating` varchar(45) DEFAULT NULL,
+  `solutionFile` blob,
+  `feedback` mediumtext,
+  PRIMARY KEY (`uname`,`assignmentId`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `User` (
+  `uname` varchar(45) NOT NULL,
+  `pass` varchar(45) NOT NULL,
+  `name` varchar(45) NOT NULL,
+  `type` varchar(45) NOT NULL,
+  PRIMARY KEY (`uname`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
