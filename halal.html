@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+
+
+<meta charset="utf-8">
+
+<head>
+
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
+
+    <link rel="stylesheet" href="halal.css">
+
+</head>
+
+<body>
+
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="dist/fastselect.min.css">
+    <script src="dist/fastselect.standalone.js"></script>
+    <script>
+        var maindata = '';
+        var radiotypes;
+        var selectedSVC;
+        var selectedCounties;
+        var countylist;
+        var colors = {
+            "PREPPEP": 'yellow',
+            "HIV": 'lightblue',
+            "HCV": 'green',
+            "PREP": 'brown'
+        }
+        function gengrid(selectedIndex) {
+            var i = 0;
+            var num_stud = 8;
+            document.getElementById('radioholder').innerHTML = ''
+            document.getElementById('dropdownholder').innerHTML = ''
+            var divIdName;
+            for (i = 0; i < radiotypes.length; i++) {
+                var newRadio;
+                newRadio = document.createElement('radio');
+                var selected = true;
+                if (i == selectedIndex) {
+                    newRadio.innerHTML = ' <label>' + radiotypes[i] + '</label><input  value="' + radiotypes[i] + '" name="svctypes" type="radio" data="' + radiotypes[i] + '" onclick="handleClick(this); " checked="' + selected + '" id="box' + i + '"/></br>';
+                } else {
+                    newRadio.innerHTML = '<label>' + radiotypes[i] + '</label><input  value="' + radiotypes[i] + '" name="svctypes" type="radio" data="' + radiotypes[i] + '" onclick="handleClick(this);"  id="box' + i + '"/></br>';
+                }
+
+                document.getElementById('radioholder').appendChild(newRadio);
+            }
+            var newSelect = document.createElement('select');
+            var selectHTML = "";
+            for (i = 0; i < countylist.length; i = i + 1) {
+                selectHTML += "<option value='" + countylist[i] + "'>" + countylist[i] + "</option>";
+            }
+            var att = document.createAttribute("multiple");       // Create a "class" attribute
+            att.value = "multiple";
+            var idatt = document.createAttribute("id");       // Create a "class" attribute
+            idatt.value = "multipleSelect";                        // Set the value of the class attribute
+            newSelect.setAttributeNode(idatt);
+            newSelect.setAttributeNode(att);
+            newSelect.innerHTML = selectHTML;
+
+            document.getElementById('dropdownholder').appendChild(newSelect);
+            $('#multipleSelect').fastselect();
+        }
+
+        function handleClick(eve) {
+            selectedSVC = eve.getAttribute('data');
+            countylist = maindata.filter(a => a.svcType == eve.getAttribute('data'));
+            countylist = [...new Set(countylist.map(item => item.county))]
+            gengrid(radiotypes.indexOf(eve.getAttribute('data')));
+        }
+        function readTextFile(file, callback) {
+            var rawFile = new XMLHttpRequest();
+            rawFile.overrideMimeType("application/json");
+            rawFile.open("GET", file, true);
+            rawFile.onreadystatechange = function () {
+                if (rawFile.readyState === 4 && rawFile.status == "200") {
+                    callback(rawFile.responseText);
+                }
+            }
+            rawFile.send(null);
+        }
+        //usage:
+        readTextFile("./halaljsn.json", function (text) {
+            var data = JSON.parse(text);
+            maindata = data;
+            radiotypes = [...new Set(data.map(item => item.svcType))];
+            countylist = data.filter(a => a.svcType == radiotypes[0]);
+            countylist = [...new Set(countylist.map(item => item.county))]
+            gengrid(0);
+            //  createChart(data);
+            // set the dimensions of the canvas
+        });
+
+        function createChart2(selected) {
+            data = maindata;
+            const color = colors[selectedSVC];
+            data = data.filter(a => a.svcType == selectedSVC);
+            data = data.filter(item => selected.includes(item.county))
+            var margin = { top: 20, right: 20, bottom: 70, left: 40 },
+                width = 600 - margin.left - margin.right,
+                height = 300 - margin.top - margin.bottom;
+            // set the ranges
+            var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+            var y = d3.scale.linear().range([height, 0]);
+            // define the axis
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .ticks(10);
+            // add the SVG element
+            var svg = d3.select("#SecondSection").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform",
+                    "translate(" + margin.left + "," + margin.top + ")");
+
+            // scale the range of the data+
+            x.domain(data.map(d => { return d.county }));
+            y.domain([0, d3.max(data, function (d) { return d.id; })]);
+            // add axis
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .selectAll("text")
+                .style("text-anchor", "end")
+                .attr("dx", "-.8em")
+                .attr("dy", "-.55em")
+                .attr("transform", "rotate(-90)");
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 5)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("iduency");
+            // Add bar chart
+            svg.selectAll("bar")
+                .data(data)
+                .enter().append("rect")
+
+                .attr("class", "bar")
+                .attr("x", function (d) { return x(d.county); })
+                .attr("width", x.rangeBand())
+                .attr("y", function (d) { return y(d.id); })
+                .attr("height", function (d) { return height - y(d.id); })
+                .attr("fill", function (d) {
+                    return color;
+                });
+        }
+
+        function ClickedEvent(event) {
+            console.log(event);
+        }
+
+        function generateGraph() {
+            var selected = [...document.getElementsByTagName('select')[0].options].filter(option => option.selected).map(option => option.value);
+            document.getElementById('SecondSection').innerHTML = '';
+            createChart2(selected);
+        }
+
+
+    </script>
+
+
+    <style>
+        #dropdownholder {
+            font-size: 11px;
+        }
+    </style>
+
+
+    <div id="radioholder">
+
+    </div>
+    <div id="dropdownholder">
+
+    </div>
+    <div>
+        <span id="SelectedCountiesList">
+
+        </span>
+        <button onclick="generateGraph()">Generate Graph</button>
+    </div>
+    <div id="FirstSection"></div>
+
+    <div id="SecondSection" style="margin-top: 5rem;"></div>
+
+    <div id="ThirdSection" style="margin-top: 5rem;"></div>
+</body>
+
+</html>
