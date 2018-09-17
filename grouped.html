@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+    body {
+        font: 10px sans-serif;
+    }
+
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .bar {
+        fill: steelblue;
+    }
+
+    .x.axis path {
+        display: none;
+    }
+</style>
+
+<body>
+    <link rel="stylesheet" href="halal.css">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script>
+
+        var margin = { top: 20, right: 20, bottom: 30, left: 40 },
+            width = 960 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+
+
+        d3.json("halaljsn.json", function (error, data) {
+            var svg = d3.select("body").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            var x = d3.scaleBand().rangeRound([0, width])
+                .padding(0.1),
+                y = d3.scaleLinear().rangeRound([height, 0]);
+
+            var g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+            var ymaxdomain = d3.max(data, function (d) {
+                return d.id;
+            });
+            x.domain(data.map(function (d) {
+                return d.county
+            }));
+            y.domain([0, ymaxdomain]);
+
+            var x1 = d3.scaleBand()
+                .rangeRound([0, x.bandwidth()])
+                .padding(0.05)
+                .domain(data.map(function (d) {
+                    return d.svcType;
+                }));
+
+            color.domain(data.map(function (d) {
+                return d.svcType;
+            }));
+
+            var groups = g.selectAll(null)
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("transform", function (d) {
+                    return "translate(" + x(d.county) + ",0)";
+                })
+
+            var bars = groups.selectAll(null)
+                .data(function (d) {
+                    return [d]
+                })
+                .enter()
+                .append("rect")
+                .attr("x", function (d, i) {
+                    return x1(d.svcType)
+                })
+                .attr("y", function (d) {
+                    return y(d.id);
+                })
+                .attr("width", x1.bandwidth())
+                .attr("height", function (d) {
+                    return height - y(d.id);
+                })
+                .attr("fill", function (d) {
+                    return color(d.svcType)
+                })
+
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(y).ticks(null, "s"))
+                .append("text")
+                .attr("x", 2)
+                .attr("y", y(y.ticks().pop()) + 0.5)
+                .attr("dy", "0.32em")
+                .attr("fill", "#000")
+                .attr("font-weight", "bold")
+                .attr("text-anchor", "start")
+                .text("count");
+
+        });
+
+    </script>

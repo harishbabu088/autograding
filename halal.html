@@ -14,15 +14,17 @@
 
 <body>
 
-    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
         crossorigin="anonymous"></script>
     <link rel="stylesheet" href="dist/fastselect.min.css">
     <script src="dist/fastselect.standalone.js"></script>
     <script>
         var maindata = '';
+        var grpData;
         var radiotypes;
         var selectedSVC;
+        var selectedSVCs = [];
         var selectedCounties;
         var countylist;
         var colors = {
@@ -39,12 +41,12 @@
             var divIdName;
             for (i = 0; i < radiotypes.length; i++) {
                 var newRadio;
-                newRadio = document.createElement('radio');
+                newRadio = document.createElement('checkbox');
                 var selected = true;
-                if (i == selectedIndex) {
-                    newRadio.innerHTML = ' <label>' + radiotypes[i] + '</label><input  value="' + radiotypes[i] + '" name="svctypes" type="radio" data="' + radiotypes[i] + '" onclick="handleClick(this); " checked="' + selected + '" id="box' + i + '"/></br>';
+                if (selectedSVCs.indexOf(radiotypes[i]) >= 0) {
+                    newRadio.innerHTML = ' <label>' + radiotypes[i] + '</label><input  value="' + radiotypes[i] + '" type="checkbox" data="' + radiotypes[i] + '" onclick="handleClick(this); " checked="' + selected + '" id="box' + i + '"/></br>';
                 } else {
-                    newRadio.innerHTML = '<label>' + radiotypes[i] + '</label><input  value="' + radiotypes[i] + '" name="svctypes" type="radio" data="' + radiotypes[i] + '" onclick="handleClick(this);"  id="box' + i + '"/></br>';
+                    newRadio.innerHTML = '<label>' + radiotypes[i] + '</label><input  value="' + radiotypes[i] + '" type="checkbox" data="' + radiotypes[i] + '" onclick="handleClick(this);"  id="box' + i + '"/></br>';
                 }
 
                 document.getElementById('radioholder').appendChild(newRadio);
@@ -67,9 +69,19 @@
         }
 
         function handleClick(eve) {
-            selectedSVC = eve.getAttribute('data');
-            countylist = maindata.filter(a => a.svcType == eve.getAttribute('data'));
-            countylist = [...new Set(countylist.map(item => item.county))];
+            if (eve.checked) {
+                selectedSVC = eve.getAttribute('data');
+                selectedSVCs.push(selectedSVC);
+                selectedSVCs = [...new Set(selectedSVCs.map(item => item))];
+            } else {
+                selectedSVC = eve.getAttribute('data');
+                selectedSVCs = selectedSVCs.filter(a => a !== selectedSVC)
+                // selectedSVCs.pop(selectedSVC);
+                selectedSVCs = [...new Set(selectedSVCs.map(item => item))];
+            }
+
+            // countylist = maindata.filter(a => a.svcType == eve.getAttribute('data'));
+            // countylist = [...new Set(countylist.map(item => item.county))];
             gengrid(radiotypes.indexOf(eve.getAttribute('data')));
         }
         function readTextFile(file, callback) {
@@ -84,7 +96,7 @@
             rawFile.send(null);
         }
         //usage:
-        readTextFile("./halaljsn.json", function (text) {
+        readTextFile("./halaljsn.json", function (text, col) {
             var data = JSON.parse(text);
             maindata = data;
             radiotypes = [...new Set(data.map(item => item.svcType))];
@@ -92,9 +104,96 @@
             countylist = [...new Set(countylist.map(item => item.county))]
             gengrid(0);
             selectedSVC = radiotypes[0];
-            //  createChart(data);
+          //  createGroupedChart(data);
             // set the dimensions of the canvas
         });
+
+        function createGroupedChart(data) {
+            var margin = { top: 20, right: 20, bottom: 30, left: 40 },
+                width = 960 - margin.left - margin.right,
+                height = 500 - margin.top - margin.bottom;
+
+
+            var svg = d3.select("#SecondSection").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            var x = d3.scaleBand().rangeRound([0, width])
+                .padding(0.1),
+                y = d3.scaleLinear().rangeRound([height, 0]);
+
+            var g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+            var ymaxdomain = d3.max(data, function (d) {
+                return d.id;
+            });
+            x.domain(data.map(function (d) {
+                return d.county
+            }));
+            y.domain([0, ymaxdomain]);
+
+            var x1 = d3.scaleBand()
+                .rangeRound([0, x.bandwidth()])
+                .padding(0.05)
+                .domain(data.map(function (d) {
+                    return d.svcType;
+                }));
+
+            color.domain(data.map(function (d) {
+                return d.svcType;
+            }));
+
+            var groups = g.selectAll(null)
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("transform", function (d) {
+                    return "translate(" + x(d.county) + ",0)";
+                })
+
+            var bars = groups.selectAll(null)
+                .data(function (d) {
+                    return [d]
+                })
+                .enter()
+                .append("rect")
+                .attr("x", function (d, i) {
+                    return x1(d.svcType)
+                })
+                .attr("y", function (d) {
+                    return y(d.id);
+                })
+                .attr("width", x1.bandwidth())
+                .attr("height", function (d) {
+                    return height - y(d.id);
+                })
+                .attr("fill", function (d) {
+                    return color(d.svcType)
+                })
+
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(y).ticks(null, "s"))
+                .append("text")
+                .attr("x", 2)
+                .attr("y", y(y.ticks().pop()) + 0.5)
+                .attr("dy", "0.32em")
+                .attr("fill", "#000")
+                .attr("font-weight", "bold")
+                .attr("text-anchor", "start")
+                .text("count");
+
+        }
 
         function createChart2(selected) {
             let xdata = maindata;
@@ -191,7 +290,8 @@
         function generateGraph() {
             var selected = [...document.getElementsByTagName('select')[0].options].filter(option => option.selected).map(option => option.value);
             document.getElementById('SecondSection').innerHTML = '';
-            createChart2(selected);
+            grpData = maindata.filter(a => selectedSVCs.indexOf(a.svcType) >= 0 && selected.indexOf(a.county) >= 0);
+            createGroupedChart(grpData);
         }
 
 
@@ -201,6 +301,10 @@
     <style>
         #dropdownholder {
             font-size: 11px;
+        }
+
+        svg {
+            padding-bottom: 4rem;
         }
     </style>
 

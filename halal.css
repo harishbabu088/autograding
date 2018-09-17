@@ -29,3 +29,7 @@
             vertical-align: baseline;
             border-radius: .25em;
         }
+
+        svg{
+            padding-bottom: 4rem;
+        }
