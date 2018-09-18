@@ -100,11 +100,11 @@
             var data = JSON.parse(text);
             maindata = data;
             radiotypes = [...new Set(data.map(item => item.svcType))];
-            countylist = data.filter(a => a.svcType == radiotypes[0]);
+            countylist = data;
             countylist = [...new Set(countylist.map(item => item.county))]
             gengrid(0);
             selectedSVC = radiotypes[0];
-          //  createGroupedChart(data);
+            //  createGroupedChart(data);
             // set the dimensions of the canvas
         });
 
@@ -155,7 +155,6 @@
                 .attr("transform", function (d) {
                     return "translate(" + x(d.county) + ",0)";
                 })
-
             var bars = groups.selectAll(null)
                 .data(function (d) {
                     return [d]
@@ -168,13 +167,18 @@
                 .attr("y", function (d) {
                     return y(d.id);
                 })
+                .attr("customdata", function (d, i) {
+                    return y(d.id);
+                })
                 .attr("width", x1.bandwidth())
                 .attr("height", function (d) {
                     return height - y(d.id);
                 })
+
                 .attr("fill", function (d) {
                     return color(d.svcType)
                 })
+
 
             g.append("g")
                 .attr("class", "axis")
@@ -193,7 +197,38 @@
                 .attr("text-anchor", "start")
                 .text("count");
 
+
+            //blue, tan, red colors
+            var legend = g.append("g")
+                .attr("font-family", "sans-serif")
+                .attr("font-size", 13)
+                .attr("text-anchor", "end")
+                .selectAll("g")
+                .data([...new Set(data.map(item => item.svcType))])
+                .enter().append("g")
+                .attr("transform", function (d, i) { return "translate(0," + i * 24 + ")"; });
+            legend.append("rect")
+                .attr("x", width - 142)
+                .attr("width", 8)
+                .attr("height", 8)
+                .attr("fill", color);
+            legend.append("text")
+                .attr("x", d => d.length > 7 ? (width - 50) : (width - 20))
+                .attr("y", 5.5)
+                .attr("dy", "0.22em")
+                .text(d => {
+                    return d;
+                });
+
         }
+
+        // function returnSvcCount(svcType) {
+        //     let total = 0;
+        //     maindata.filter(a => a.svcType === svcType).forEach(a => {
+        //         total += a.id;
+        //     })
+        //     return svcType + ', ' + total;
+        // }
 
         function createChart2(selected) {
             let xdata = maindata;
