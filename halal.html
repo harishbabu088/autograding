@@ -109,6 +109,26 @@
         });
 
         function createGroupedChart(data) {
+            const copydata = data;
+            const allSVC = [...new Set(data.map(item => item.svcType))];
+            const newdata = [];
+            allSVC.forEach(a => {
+                const getallcountydata = copydata.filter(d => d.svcType === a);
+                const uniquecounty = [...new Set(getallcountydata.map(item => item.county))];
+                uniquecounty.forEach(county => {
+                    let total = 0;
+                    copydata.filter(x => x.svcType === a && x.county === county).map(v => {
+                        total += 1; // a.id;
+                    })
+                    newdata.push({
+                        svcType: a,
+                        county: county,
+                        id: total
+                    })
+                });
+            });
+
+            data = newdata;
             var margin = { top: 20, right: 20, bottom: 30, left: 40 },
                 width = 960 - margin.left - margin.right,
                 height = 500 - margin.top - margin.bottom;
@@ -167,7 +187,7 @@
                 .attr("y", function (d) {
                     return y(d.id);
                 })
-                .attr("customdata", function (d, i) {
+                .attr("title", function (d, i) {
                     return y(d.id);
                 })
                 .attr("width", x1.bandwidth())
@@ -178,8 +198,19 @@
                 .attr("fill", function (d) {
                     return color(d.svcType)
                 })
+                .append("svg:title")
+                .text(function (d) {
+                    return d.id;
+                })
+                .on("mouseover", function (d) {
+                    d3.select(this).style("fill", d3.rgb(color(d.svcType)).darker(2));
+                })
+                .on("mouseout", function (d) {
+                    d3.select(this).style("fill", color(d.svcType));
+                });
 
 
+            g.select('.y').transition().duration(500).delay(1300).style('opacity', '1');
             g.append("g")
                 .attr("class", "axis")
                 .attr("transform", "translate(0," + height + ")")
