@@ -155,7 +155,7 @@
             x.domain(data.map(function (d) {
                 return d.county
             }));
-            y.domain([0, ymaxdomain]);
+            y.domain([0, ymaxdomain + 100])
 
             var x1 = d3.scaleBand()
                 .rangeRound([0, x.bandwidth()])
@@ -167,6 +167,9 @@
             color.domain(data.map(function (d) {
                 return d.svcType;
             }));
+
+            var tooltip = d3.select("body").append("div").attr("class", "toolTip");
+
 
             var groups = g.selectAll(null)
                 .data(data)
@@ -198,16 +201,20 @@
                 .attr("fill", function (d) {
                     return color(d.svcType)
                 })
-                .append("svg:title")
-                .text(function (d) {
-                    return d.id;
+                // .append("svg:title")
+                // .text(function (d) {
+                //     return d.id;
+                // }).attr("class", function (d) {
+                //     return "tooltiptext";
+                // })
+                .on("mousemove", function (d) {
+                    tooltip
+                        .style("left", d3.event.pageX - 50 + "px")
+                        .style("top", d3.event.pageY - 70 + "px")
+                        .style("display", "inline-block")
+                        .html((d.svcType) + " Providers :" + (d.id));
                 })
-                .on("mouseover", function (d) {
-                    d3.select(this).style("fill", d3.rgb(color(d.svcType)).darker(2));
-                })
-                .on("mouseout", function (d) {
-                    d3.select(this).style("fill", color(d.svcType));
-                });
+                .on("mouseout", function (d) { tooltip.style("display", "none"); });
 
 
             g.select('.y').transition().duration(500).delay(1300).style('opacity', '1');
@@ -235,16 +242,16 @@
                 .attr("font-size", 13)
                 .attr("text-anchor", "end")
                 .selectAll("g")
-                .data([...new Set(data.map(item => item.svcType))])
+                .data([...new Set(maindata.map(item => item.svcType))])
                 .enter().append("g")
                 .attr("transform", function (d, i) { return "translate(0," + i * 24 + ")"; });
             legend.append("rect")
-                .attr("x", width - 142)
+                .attr("x", width - 110)
                 .attr("width", 8)
                 .attr("height", 8)
                 .attr("fill", color);
             legend.append("text")
-                .attr("x", d => d.length > 7 ? (width - 50) : (width - 20))
+                .attr("x", d => d.length > 7 ? (width - 50) : (width - 30))
                 .attr("y", 5.5)
                 .attr("dy", "0.22em")
                 .text(d => {
@@ -253,13 +260,6 @@
 
         }
 
-        // function returnSvcCount(svcType) {
-        //     let total = 0;
-        //     maindata.filter(a => a.svcType === svcType).forEach(a => {
-        //         total += a.id;
-        //     })
-        //     return svcType + ', ' + total;
-        // }
 
         function createChart2(selected) {
             let xdata = maindata;
